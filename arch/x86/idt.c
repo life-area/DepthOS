@@ -124,7 +124,7 @@ void idt_init() {
 }
 
 void __idt_default_handler() {
-	console_write("hello!");
+	console_write("null intr");
 }
 
 void irq_handler(regs_t r) {
@@ -266,7 +266,9 @@ void reg_intr(uint32_t i,intr_ht f) {
 		print_mod("error -> reg interrupt handler",MOD_ERR);
 	}
 	else {
-		print_mod("new interrupt registred",MOD_OK);
+//		printk("new interrupt registred ");
+//		printk("( %d )\n",i);
+		return;
 	}
 }
 

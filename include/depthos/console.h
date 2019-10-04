@@ -1,6 +1,8 @@
 #pragma once
 
 #include <depthos/stdarg.h>
+#include <depthos/stdio.h>
+#include <depthos/serial.h>
 #include <depthos/stdtypes.h>
 #include <depthos/ports.h>
 
@@ -51,6 +53,21 @@ void console_write_color(const char* buf,int8_t b,int8_t f);
 void console_putchar_color(unsigned char c,int8_t b,int8_t f);
 
 void print_mod(char* buf,int m);
+//char *mlog_s;                                               
+
+
+void mod_loga(char* file, int line, char *mod,char *msg,...);
+#define mod_log(mod,msg,...) mod_loga(__FILE__,__LINE__,mod,msg, ##__VA_ARGS__)
+#define mod_loge(mod,msg,...) mod_loga(__FILE__,__LINE__,mod,msg)
+#define panic(msg,...)     \
+  mod_log(__func__,msg, ##__VA_ARGS__); \
+  while(1) {}
+#define panice(msg)     \
+  mod_loga(__FILE__,__LINE__,__func__,msg);\
+  while(1) {}
+
+void register_console(void (*output)(void *context, const char *data, size_t sz),
+		      void *context);
 
 void printk(const char *fmt, ...);
 void vprintk(const char *fmt, va_list ap);

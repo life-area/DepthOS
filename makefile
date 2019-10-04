@@ -8,16 +8,23 @@ ARCH?=x86
 DEBUG?=on
 OSVER?=1.0
 OSNAME?=DepthOS
-CC=gcc
-LD=ld
+BINCPATH?=/bin
+ifeq ($(BUILDOS),win)
+	CC=$(BINCPATH)/i686-elf-gcc
+	LD=$(BINCPATH)/i686-elf-ld
+else
+	CC=$(BINCPATH)/gcc
+	LD=$(BINCPATH)/ld
+endif
 ASM=nasm -f elf32
 CSTD=11
 CEMU=-m32
 CCFLAGS= -Iinclude -ffreestanding -nostdlib -nostdinc -fno-builtin -fno-exceptions -fno-leading-underscore -fno-pic
-CCFLAGS += -W -Wall -Wno-unused-parameter -Wno-type-limits # -Werror
+CCFLAGS += -W -Wall -Wno-unused-parameter -Wno-type-limits -Wno-parentheses -Wno-unused-variable -Wno-maybe-uninitialized -Wno-return-local-addr -Wno-return-type
 ASFLAGS = -m32
 ifeq ($(BUILDOS),win)
-	LDEMU=-mi386pe
+#	LDEMU=-mi386pe
+	LDEMU=-melf_i386
 else
 	LDEMU=-melf_i386
 endif
@@ -59,9 +66,9 @@ clean:
 	@rm -f $(OSNAME)-*
 
 
-build: kernel img iso
+build: checks kernel img iso
 
-
+checks:
 kernel: $(CSOURCES) $(ASMSOURCES) $(NASMSOURCES) $(LDFILE)
 	@echo ---------- build kernel -----------
 ifeq ($(DEBUG),on)
@@ -75,9 +82,9 @@ endif
 	@mkdir -p build
 	@mv *.o build/
 	$(ASM) $(NASMSOURCES)
-	gcc -m32 -c $(ASMSOURCES)
+	$(CC) $(CEMU) -c $(ASMSOURCES)
 	@mv *.o build/
-	$(LD) $(LDEMU) --nmagic -T$(LDFILE) -o build/$(OUTBIN).bin build/*.o
+	$(LD) $(LDEMU) -T$(LDFILE) -o build/$(OUTBIN).bin build/*.o --build-id=none 
 ifeq ($(BUILDOS),win)	
 	objcopy -O elf32-i386 build/$(OUTBIN).bin $(OUTBIN)
 else
@@ -94,6 +101,9 @@ hex_info:
 	hexdump -x build/loader.o
 	@echo kernel hex info
 	hexdump -x $(OUTBIN)
+elf_info:
+	@echo ---------- ELF INFO ----------
+	readelf -l $(OUTBIN)
 #dis_asm:
 #	@echo ---------- DIS ASM ----------
 #	@echo loader disasm
@@ -106,11 +116,16 @@ obj_info:
 	objdump -f -h build/loader.o
 	@echo kernel obj info
 	objdump -f -h $(OUTBIN)
-info: hex_info obj_info # dis_asm
+info: hex_info obj_info elf_info # dis_asm
 
 test:
 	@echo
 	@echo ----------- testing os ------------
 	@echo
-	qemu-system-i386 -M pc-i440fx-2.8 -kernel $(OUTBIN) # -d cpu -D qemu_log.log # -d int,pcall,cpu,fpu # -nographic
-
+ifeq ($(DEBUG), on)
+	qemu-system-i386 -M pc-i440fx-2.8 -kernel $(OUTBIN) # -S -s # -nographic
+else ifeq ($(DEBUG), true)
+	qemu-system-i386 -M pc-i440fx-2.8 -kernel $(OUTBIN) # -S -s # -nographic
+else
+	qemu-system-i386 -M pc-i440fx-2.8 -kernel $(OUTBIN) # -d int,pcall,cpu,fpu -D qemu_log.log # -S -s # -nographic
+endif

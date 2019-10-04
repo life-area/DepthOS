@@ -1,40 +1,47 @@
 #pragma once
 
+#include <depthos/string.h>
 #include <depthos/stdtypes.h>
 
+// mru - memory reuse (algorithm)
 
-typedef uint32_t lptr_t;
+struct __heap_cacheblock;
+struct __heap_localblock;
 
-typedef struct __stdheap {
-	lptr_t startAddr;
-	lptr_t endAddr;
-}heap_t;
+typedef struct __heap_resblock {
+	size_t pages;
+	struct __heap_cacheblock *root_cacheblock;
+	struct __heap_cacheblock *top_cacheblock;
+	bool busy_mru;
+	uint32_t resid;
+	uint32_t beginpf;
+	uint32_t lastpf;
+	//uint32_t lastlba;
+}heap_resblock_t;
 
-typedef struct __stdheap_chunk {
+typedef struct __heap_localblock {
+	struct __heap_cacheblock *cacheblock;
+}heap_localblock_t;
+
+typedef struct __heap_cacheblock {
 	size_t size;
-	short int used;
-}heap_chunk_t;
+	bool busy;
+	bool busy_mru;
 
+	heap_localblock_t *localblock;
 
-uint32_t pl_sbrk(uint32_t sz);
-uint32_t pl_sbrk_uni(uint32_t sz,int aling,uint32_t *phys);
-uint32_t pl_sbrk_a(uint32_t sz,int aling);
-uint32_t pl_sbrk_p(uint32_t sz,uint32_t *phys);
+	struct __heap_resblock *resource;
 
-uint32_t kmalloc_uni(uint32_t sz,int align,uint32_t *phys);
-uint32_t kmalloc(uint32_t sz);
-uint32_t kmalloc_a(uint32_t sz,int align);
-uint32_t kmalloc_p(uint32_t sz,uint32_t *phys);
+	struct __heap_cacheblock *next;
+	struct __heap_cacheblock *prev;
+}heap_cacheblock_t;
+	
 
+heap_resblock_t* __heap_alloc_resblock();
+heap_resblock_t* __heap_find_resblock();
+void __heap_free_resblock(heap_resblock_t* rb);
 
-void* sbrk(size_t sz);
+void __heap_free(void* ptr);
+void* __heap_alloc(heap_resblock_t* resb, size_t size);
 
-
-
-heap_t* init_heap(size_t sz);
-
-void* __stdkmalloc(size_t sz,heap_t *heap);
-void __stdkfree(void* p,heap_t *heap);
-
-void* __stdmalloc(size_t sz);
-void* __stdfree(void* p);
+void __gheap_init();

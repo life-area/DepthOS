@@ -1,6 +1,7 @@
 #pragma once
 
 #include <depthos/stdtypes.h>
+#include <depthos/tools.h>
 #include <depthos/ports.h>
 
 #include <depthos/console.h>
@@ -12,18 +13,20 @@ typedef struct __regs {
     uint32_t eip,cs,eflags,useresp,ss;
 } regs_t;
 
+
+
 struct __idt_entry{
 	uint16_t addr_low;
 	uint16_t sel;
 	uint8_t zero;
 	uint8_t flags;
 	uint16_t addr_high;
-}apack;
+}__pack;
 
 struct __idt_ptr {
 	uint16_t size;
 	uint32_t addr;
-}apack;
+}__pack;
 
 typedef void (*intr_ht)(regs_t);
 
